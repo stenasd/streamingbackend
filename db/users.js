@@ -2,7 +2,7 @@ var records = [
     { id: 1, username: 'jack', password: 'secret', displayName: 'Jack', emails: [ { value: 'jack@example.com' } ] }
   , { id: 2, username: 'jill', password: 'birthday', displayName: 'Jill', emails: [ { value: 'jill@example.com' } ] }
 ];
-
+// if id is in database respond with userobject
 exports.findById = function(id, cb) {
   process.nextTick(function() {
     var idx = id - 1;
@@ -13,7 +13,7 @@ exports.findById = function(id, cb) {
     }
   });
 }
-
+//if find atleast 1 in database return userobject
 exports.findByUsername = function(username, cb) {
   process.nextTick(function() {
     for (var i = 0, len = records.length; i < len; i++) {
@@ -23,5 +23,20 @@ exports.findByUsername = function(username, cb) {
       }
     }
     return cb(null, null);
+  });
+}
+function GetFromWhere(whereat) {
+
+  return new Promise(resolve => {
+      var sql = "SELECT * FROM users WHERE id = ?";
+      con.query(sql, [whereat], function (err, result) {
+          if (err) throw err;
+
+          if (result.length) {
+              resolve(result[0].name)
+              console.log("get name" + name + " " + result[0].name);
+          }
+
+      });
   });
 }

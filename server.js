@@ -1,6 +1,14 @@
+
 var express = require('express');
 var passport = require('passport');
 var Strategy = require('passport-local').Strategy;
+const mysql = require('mysql');
+var con = mysql.createConnection({
+  host: "localhost",
+  user: "root",
+  password: "",
+  database: "moviedb"
+});
 var db = require('./db');
 var express = require('express')
 var fs = require('fs')
@@ -41,9 +49,9 @@ app.get('/',
   function (req, res) {
     res.render('home', { user: req.user });
   });
-  app.get('/v', function(req, res) {
-    res.sendFile(path.join(__dirname + '/index.htm'))
-  })
+app.get('/v', function (req, res) {
+  res.sendFile(path.join(__dirname + '/index.htm'))
+})
 app.get('/login',
   function (req, res) {
     res.render('login');
