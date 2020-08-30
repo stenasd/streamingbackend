@@ -3,12 +3,6 @@ var express = require('express');
 var passport = require('passport');
 var Strategy = require('passport-local').Strategy;
 const mysql = require('mysql');
-var con = mysql.createConnection({
-  host: "localhost",
-  user: "root",
-  password: "",
-  database: "moviedb"
-});
 var db = require('./db');
 var express = require('express')
 var fs = require('fs')
@@ -17,21 +11,26 @@ var app = express()
 var fs = require('fs')
 var path = require('path')
 
+//api endpoint that sends all pahts and name to the client and then supply movie from folder based on path or id requested
 passport.use(new Strategy(
   function (username, password, cb) {
     db.users.findByUsername(username, function (err, user) {
+      
       if (err) { return cb(err); }
       if (!user) { return cb(null, false); }
-      if (user.password != password) { return cb(null, false); }
+      if (user.pass != password) { return cb(null, false); }
       return cb(null, user);
     });
   }));
 passport.serializeUser(function (user, cb) {
+  console.log("serlizelogs"+JSON.stringify(user))
   cb(null, user.id);
 });
 
 passport.deserializeUser(function (id, cb) {
+
   db.users.findById(id, function (err, user) {
+    console.log("deserlize"+JSON.stringify(user)+" "+id)
     if (err) { return cb(err); }
     cb(null, user);
   });
@@ -47,11 +46,19 @@ app.use(passport.initialize());
 app.use(passport.session());
 app.get('/',
   function (req, res) {
+
     res.render('home', { user: req.user });
   });
+
 app.get('/v', function (req, res) {
   res.sendFile(path.join(__dirname + '/index.htm'))
 })
+//sends all video ids and name so frontend can creat a search or movie list
+app.get('/videodata', async (req, res) =>{
+  res.send(await db.users.Getallmovies())
+  
+})
+
 app.get('/login',
   function (req, res) {
     res.render('login');
@@ -72,14 +79,19 @@ app.get('/logout',
 app.get('/profile',
   require('connect-ensure-login').ensureLoggedIn(),
   function (req, res) {
+  
     res.render('profile', { user: req.user });
   });
-app.get('/video', function (req, res) {
-  const path = 'assets/sample.mp4'
+//acctual video stream todo add parameters with path to the movie that the client want streamed
+//http://expressjs.com/en/api.html#req.query
+app.get('dbtest', async (req, res) => {
+
+})
+app.get('/video/:id?', require('connect-ensure-login').ensureLoggedIn(), async (req, res) => {
+  const path = 'assets/' + await db.users.GetFromWhere(req.params.id)
   const stat = fs.statSync(path)
   const fileSize = stat.size
   const range = req.headers.range
-  console.log(JSON.stringify(req.headers))
   if (range) {
     const parts = range.replace(/bytes=/, "").split("-")
     const start = parseInt(parts[0], 10)
@@ -112,4 +124,6 @@ app.get('/video', function (req, res) {
     fs.createReadStream(path).pipe(res)
   }
 })
+
+
 app.listen(3000);
