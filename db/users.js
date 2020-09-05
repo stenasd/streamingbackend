@@ -3,7 +3,7 @@ var connection = mysql.createConnection({
   host: "localhost",
   user: "foo",
   password: "bar",
-  database: "movie"
+  database: "movies"
 });
 var records = [
   { id: 1, username: 'jack', password: 'secret', displayName: 'Jack', emails: [{ value: 'jack@example.com' }] }
@@ -78,9 +78,9 @@ exports.getallusers = function () {
     if (!connection._connectCalled) {
       connection.connect();
     }
-    connection.query("SELECT * FROM users", function (err, result, fields) {
-      //if (err) throw err;
-      if (result[0] == undefined) {
+    connection.query("SELECT * FROM `users` ", function (err, result, fields) {
+      console.log("asd"+result)
+      if (result == undefined) {
         //resolve(".")
       }
       else {

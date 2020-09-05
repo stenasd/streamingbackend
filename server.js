@@ -10,12 +10,18 @@ var path = require('path')
 var app = express()
 var fs = require('fs')
 var path = require('path')
-
+var cors = require('cors')
+app.use(cors())
+app.use(function(req, res, next) {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  next();
+});
 //api endpoint that sends all pahts and name to the client and then supply movie from folder based on path or id requested
 passport.use(new Strategy(
   function (username, password, cb) {
     db.users.findByUsername(username, function (err, user) {
-      
+
       if (err) { return cb(err); }
       if (!user) { return cb(null, false); }
       if (user.pass != password) { return cb(null, false); }
@@ -23,19 +29,19 @@ passport.use(new Strategy(
     });
   }));
 passport.serializeUser(function (user, cb) {
-  console.log("serlizelogs"+JSON.stringify(user))
+  console.log("serlizelogs" + JSON.stringify(user))
   cb(null, user.id);
 });
 
 passport.deserializeUser(function (id, cb) {
 
   db.users.findById(id, function (err, user) {
-    console.log("deserlize"+JSON.stringify(user)+" "+id)
+    console.log("deserlize" + JSON.stringify(user) + " " + id)
     if (err) { return cb(err); }
     cb(null, user);
   });
 });
-
+console.log(db.users.getallusers())
 var app = express();
 app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
@@ -54,9 +60,9 @@ app.get('/v', function (req, res) {
   res.sendFile(path.join(__dirname + '/index.htm'))
 })
 //sends all video ids and name so frontend can creat a search or movie list
-app.get('/videodata', async (req, res) =>{
+app.get('/videodata', async (req, res) => {
   res.send(await db.users.Getallmovies())
-  
+
 })
 
 app.get('/login',
@@ -79,7 +85,7 @@ app.get('/logout',
 app.get('/profile',
   require('connect-ensure-login').ensureLoggedIn(),
   function (req, res) {
-  
+
     res.render('profile', { user: req.user });
   });
 //acctual video stream todo add parameters with path to the movie that the client want streamed
@@ -125,5 +131,19 @@ app.get('/video/:id?', require('connect-ensure-login').ensureLoggedIn(), async (
   }
 })
 
+var con = mysql.createConnection({
+  host: "localhost",
+  user: "foo",
+  password: "bar",
+  database: "movies"
+});
 
-app.listen(3000);
+con.connect(function(err) {
+  if (err) throw err;
+  con.query("SELECT * FROM movies", function (err, result, fields) {
+    if (err) throw err;
+    console.log(result);
+  });
+});
+console.log("started")
+app.listen(6969);
