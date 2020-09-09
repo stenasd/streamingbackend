@@ -3,17 +3,17 @@ var connection = mysql.createConnection({
   host: "localhost",
   user: "foo",
   password: "bar",
-  database: "movies"
+  database: "movie"
 });
 var records = [
   { id: 1, username: 'jack', password: 'secret', displayName: 'Jack', emails: [{ value: 'jack@example.com' }] }
   , { id: 2, username: 'jill', password: 'birthday', displayName: 'Jill', emails: [{ value: 'jill@example.com' }] }
 ];
 // if id is in database respond with userobject
-exports.findById = function(id, cb) {
-  process.nextTick(async function() {
+exports.findById = function (id, cb) {
+  process.nextTick(async function () {
     var idx = await GetIdWhere(id)
-    console.log("findid"+idx+" ")
+    console.log("findid" + idx + " ")
     if (idx) {
       cb(null, idx);
     } else {
@@ -22,11 +22,11 @@ exports.findById = function(id, cb) {
   });
 }
 //if find atleast 1 in database return userobject
-exports.findByUsername = function(username, cb) {
-  process.nextTick(async function() {
-        let a = await GetUsernameWhere(username)
-        return cb(null, a);
- 
+exports.findByUsername = function (username, cb) {
+  process.nextTick(async function () {
+    let a = await GetUsernameWhere(username)
+    return cb(null, a);
+
   });
 }
 
@@ -79,7 +79,7 @@ exports.getallusers = function () {
       connection.connect();
     }
     connection.query("SELECT * FROM `users` ", function (err, result, fields) {
-      console.log("asd"+result)
+      console.log("asd" + result)
       if (result == undefined) {
         //resolve(".")
       }
@@ -112,7 +112,7 @@ function GetIdWhere(whereat) {
 }
 function GetUsernameWhere(whereat) {
 
-  return new Promise(resolve => {
+  return new Promise(resolve => { 
     if (!connection._connectCalled) {
       connection.connect();
     }
@@ -126,4 +126,16 @@ function GetUsernameWhere(whereat) {
       }
     });
   });
+}
+function insertmoviedata(id,moviedata) {
+ 
+  con.connect(function(err) {
+    if (err) throw err;
+    var sql = "UPDATE users SET movejson = "+mysql.escape(JSON.stringify(moviedata))+" WHERE id = "+mysql.escape(id);
+    con.query(sql, function (err, result) {
+      if (err) throw err;
+      console.log(result.affectedRows + " record(s) updated");
+    });
+  });
+ 
 }

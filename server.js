@@ -12,7 +12,7 @@ var fs = require('fs')
 var path = require('path')
 var cors = require('cors')
 app.use(cors())
-app.use(function(req, res, next) {
+app.use(function (req, res, next) {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
   next();
@@ -61,6 +61,7 @@ app.get('/v', function (req, res) {
 })
 //sends all video ids and name so frontend can creat a search or movie list
 app.get('/videodata', async (req, res) => {
+  //gets 20 latest released movies or something
   res.send(await db.users.Getallmovies())
 
 })
@@ -69,17 +70,28 @@ app.get('/login',
   function (req, res) {
     res.render('login');
   });
-
+app.post('/uservideodata',
+  //update movie save json in users with req.user.username
+ );
 app.post('/login',
   passport.authenticate('local', { failureRedirect: '/login' }),
   function (req, res) {
-    res.redirect('/');
+    res.redirect('http://172.20.0.1:3000/');
   });
+app.get("/checkAuthentication", (req, res) => {
+
+  if (typeof req.user !== 'undefined') {
+    res.status(200).json({
+      authenticated: true,
+    });
+  }
+
+});
 
 app.get('/logout',
   function (req, res) {
     req.logout();
-    res.redirect('/');
+    res.redirect('http://172.20.0.1:3000/');
   });
 
 app.get('/profile',
@@ -93,7 +105,8 @@ app.get('/profile',
 app.get('dbtest', async (req, res) => {
 
 })
-app.get('/video/:id?', require('connect-ensure-login').ensureLoggedIn(), async (req, res) => {
+app.get('/video/:id?', async (req, res) => {
+  console.log(req.params.id + " paramid");
   const path = 'assets/' + await db.users.GetFromWhere(req.params.id)
   const stat = fs.statSync(path)
   const fileSize = stat.size
@@ -135,10 +148,10 @@ var con = mysql.createConnection({
   host: "localhost",
   user: "foo",
   password: "bar",
-  database: "movies"
+  database: "movie"
 });
 
-con.connect(function(err) {
+con.connect(function (err) {
   if (err) throw err;
   con.query("SELECT * FROM movies", function (err, result, fields) {
     if (err) throw err;
