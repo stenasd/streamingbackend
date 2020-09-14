@@ -1,4 +1,5 @@
-
+//todo fix connection handshake thing on new queries
+//data store for sessions
 var express = require('express');
 var passport = require('passport');
 var Strategy = require('passport-local').Strategy;
@@ -10,14 +11,8 @@ var path = require('path')
 var app = express()
 var fs = require('fs')
 var path = require('path')
-var cors = require('cors')
-app.use(cors())
-app.use(function (req, res, next) {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-  next();
-});
-//api endpoint that sends all pahts and name to the client and then supply movie from folder based on path or id requested
+var bodyParser = require('body-parser')
+
 passport.use(new Strategy(
   function (username, password, cb) {
     db.users.findByUsername(username, function (err, user) {
@@ -29,58 +24,122 @@ passport.use(new Strategy(
     });
   }));
 passport.serializeUser(function (user, cb) {
-  console.log("serlizelogs" + JSON.stringify(user))
+
   cb(null, user.id);
 });
-
 passport.deserializeUser(function (id, cb) {
 
   db.users.findById(id, function (err, user) {
-    console.log("deserlize" + JSON.stringify(user) + " " + id)
+
     if (err) { return cb(err); }
     cb(null, user);
   });
 });
-console.log(db.users.getallusers())
 var app = express();
 app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
 app.use(express.static(path.join(__dirname, 'public')))
-app.use(require('body-parser').urlencoded({ extended: true }));
+  / app.use(require('body-parser').urlencoded({ extended: true }));
+app.use(bodyParser.json());
 app.use(require('express-session')({ secret: 'keyboard cat', resave: false, saveUninitialized: false }));
 app.use(passport.initialize());
 app.use(passport.session());
-app.get('/',
+
+app.get('/api/',
   function (req, res) {
 
     res.render('home', { user: req.user });
   });
 
-app.get('/v', function (req, res) {
+app.get('/api/v', function (req, res) {
   res.sendFile(path.join(__dirname + '/index.htm'))
 })
-//sends all video ids and name so frontend can creat a search or movie list
-app.get('/videodata', async (req, res) => {
+app.get('/api/videodata', async (req, res) => {
   //gets 20 latest released movies or something
   res.send(await db.users.Getallmovies())
 
 })
 
-app.get('/login',
+app.get('/api/login',
   function (req, res) {
     res.render('login');
   });
-app.post('/uservideodata',
-  //update movie save json in users with req.user.username
- );
-app.post('/login',
+app.get("/api/uservideodata", async (req, res) => {
+  var asjson = {
+    "movarr": [
+      { "id": "55", "time": "55" },
+    ]
+  }
+  if (typeof req.user !== 'undefined') {
+    let user = await db.users.getuserfromid(1)
+    console.log(JSON.stringify(user));
+    if (user.moviedata != null) {
+
+      let usermovie = replaceAllBackSlash(user.moviedata)
+      console.log("checkifnull" + user)
+      usermovie = JSON.parse(usermovie)
+      console.log(usermovie.count)
+
+      res.status(200).json(usermovie);
+    }
+    res.status(200).json(asjson);
+  }
+});
+app.post("/api/uservideodata", async (req, res) => {
+  //check if id and time and duration is a number then unshift to front and remove dupplicates and remove stuff thats over 10 movies
+  console.log("postreq" + JSON.stringify(req.body.time))
+  //await old movie list
+  if (typeof req.user !== 'undefined') {
+    let user = await db.users.getuserfromid(1)
+    console.log(JSON.stringify(user));
+    if (user.moviedata != null) {
+      
+      let usermoviearray = replaceAllBackSlash(user.moviedata)
+      usermoviearray = JSON.parse(usermoviearray)
+      //todo check req.body is number
+      usermoviearray.movie.unshift(req.body)
+      //if top is same id just update time/remove
+      if (usermoviearray.movie[0].id == req.body.id) {
+        usermoviearray.movie[0].time = req.body.time
+        res.status(200)
+      }
+      let currentindex
+      usermoviearray.forEach(userelement => {
+
+        //if already on watch move to front and update to latest time
+        if (userelement.id == req.body.id) {
+          usermoviearray[currentindex].time=req.body.time
+          usermoviearray.unshift(usermoviearray.splice(currentindex,1)[0])
+          res.status(200)
+        }
+        
+
+        currentindex++;
+      });
+       //unshift current req.body
+      usermoviearray.unshift(req.body)
+      user.moviedata=usermoviearray 
+      db.users.insertmoviedata(user.id,user.moviedata)
+      res.status(200)
+      //todo if at end of movie ignore and remove from array
+     
+      
+
+
+
+    }
+    res.status(200).json(req.body.time);
+  }
+});
+app.post('/api/login',
   passport.authenticate('local', { failureRedirect: '/login' }),
   function (req, res) {
     res.redirect('http://172.20.0.1:3000/');
   });
-app.get("/checkAuthentication", (req, res) => {
+app.get("/api/checkAuthentication", (req, res) => {
 
   if (typeof req.user !== 'undefined') {
+
     res.status(200).json({
       authenticated: true,
     });
@@ -88,25 +147,20 @@ app.get("/checkAuthentication", (req, res) => {
 
 });
 
-app.get('/logout',
+
+app.get('/api/logout',
   function (req, res) {
     req.logout();
     res.redirect('http://172.20.0.1:3000/');
   });
-
-app.get('/profile',
+app.get('/api/profile',
   require('connect-ensure-login').ensureLoggedIn(),
   function (req, res) {
 
     res.render('profile', { user: req.user });
   });
-//acctual video stream todo add parameters with path to the movie that the client want streamed
-//http://expressjs.com/en/api.html#req.query
-app.get('dbtest', async (req, res) => {
+app.get('/api/video/:id?', async (req, res) => {
 
-})
-app.get('/video/:id?', async (req, res) => {
-  console.log(req.params.id + " paramid");
   const path = 'assets/' + await db.users.GetFromWhere(req.params.id)
   const stat = fs.statSync(path)
   const fileSize = stat.size
@@ -143,7 +197,6 @@ app.get('/video/:id?', async (req, res) => {
     fs.createReadStream(path).pipe(res)
   }
 })
-
 var con = mysql.createConnection({
   host: "localhost",
   user: "foo",
@@ -155,8 +208,31 @@ con.connect(function (err) {
   if (err) throw err;
   con.query("SELECT * FROM movies", function (err, result, fields) {
     if (err) throw err;
-    console.log(result);
+
   });
 });
 console.log("started")
 app.listen(6969);
+function replaceAllBackSlash(targetStr) {
+  var index = targetStr.indexOf("\\");
+  while (index >= 0) {
+    targetStr = targetStr.replace("\\", "");
+    index = targetStr.indexOf("\\");
+  }
+  return targetStr;
+}
+
+
+
+let jarray = {
+  "movie": [
+    { "id": "1", "duration": "12", "time": "12" }
+    , { "id": "2", "duration": "12", "time": "12" }
+    , { "id": "3", "duration": "12", "time": "12" }
+    , { "id": "4", "duration": "12", "time": "12" }
+  ]
+}
+let a = jarray.movie
+
+a.unshift({ "id": "44", "duration": "44", "time": "44" })
+console.log(JSON.stringify(a));

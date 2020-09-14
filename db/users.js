@@ -36,13 +36,14 @@ exports.GetFromWhere = function (whereat) {
     if (!connection._connectCalled) {
       connection.connect();
     }
+    console.log("whereat" + whereat);
     connection.query("SELECT * FROM movies WHERE id = " + mysql.escape(whereat), function (err, result, fields) {
       //if (err) throw err;
       if (result[0] == undefined) {
         //resolve(".")
       }
       else {
-        console.log("print" + result[0].path);
+       
         resolve(result[0].path)
       }
 
@@ -63,7 +64,7 @@ exports.Getallmovies = function () {
         //resolve(".")
       }
       else {
-        console.log("print" + result);
+        
         resolve(result)
       }
 
@@ -84,7 +85,7 @@ exports.getallusers = function () {
         //resolve(".")
       }
       else {
-        console.log("print" + result);
+
         resolve(result)
       }
 
@@ -112,7 +113,7 @@ function GetIdWhere(whereat) {
 }
 function GetUsernameWhere(whereat) {
 
-  return new Promise(resolve => { 
+  return new Promise(resolve => {
     if (!connection._connectCalled) {
       connection.connect();
     }
@@ -127,15 +128,35 @@ function GetUsernameWhere(whereat) {
     });
   });
 }
-function insertmoviedata(id,moviedata) {
- 
-  con.connect(function(err) {
+
+
+exports.insertmoviedata = function (id, moviedata) {
+
+  connection.connect(function (err) {
     if (err) throw err;
-    var sql = "UPDATE users SET movejson = "+mysql.escape(JSON.stringify(moviedata))+" WHERE id = "+mysql.escape(id);
-    con.query(sql, function (err, result) {
+    var sql = "UPDATE users SET moviedata = " + mysql.escape(JSON.stringify(moviedata)) + " WHERE id = " + mysql.escape(id);
+    connection.query(sql, function (err, result) {
       if (err) throw err;
       console.log(result.affectedRows + " record(s) updated");
     });
   });
- 
+
+}
+
+exports.getuserfromid = function (whereat) {
+
+  return new Promise(resolve => {
+    if (!connection._connectCalled) {
+      connection.connect();
+    }
+    connection.query("SELECT * FROM users WHERE id = " + mysql.escape(whereat), function (err, result, fields) {
+      //if (err) throw err;
+      if (result[0] == undefined) {
+        //resolve(".")
+      }
+      else {
+        resolve(result[0])
+      }
+    });
+  });
 }
