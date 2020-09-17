@@ -11,7 +11,8 @@ var path = require('path')
 var app = express()
 var fs = require('fs')
 var path = require('path')
-var bodyParser = require('body-parser')
+var bodyParser = require('body-parser');
+const { time } = require('console');
 
 passport.use(new Strategy(
   function (username, password, cb) {
@@ -39,7 +40,7 @@ var app = express();
 app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
 app.use(express.static(path.join(__dirname, 'public')))
-  / app.use(require('body-parser').urlencoded({ extended: true }));
+app.use(require('body-parser').urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(require('express-session')({ secret: 'keyboard cat', resave: false, saveUninitialized: false }));
 app.use(passport.initialize());
@@ -65,11 +66,6 @@ app.get('/api/login',
     res.render('login');
   });
 app.get("/api/uservideodata", async (req, res) => {
-  var asjson = {
-    "movarr": [
-      { "id": "55", "time": "55" },
-    ]
-  }
   if (typeof req.user !== 'undefined') {
     let user = await db.users.getuserfromid(1)
     console.log(JSON.stringify(user));
@@ -82,49 +78,31 @@ app.get("/api/uservideodata", async (req, res) => {
 
       res.status(200).json(usermovie);
     }
-    res.status(200).json(asjson);
   }
 });
 app.post("/api/uservideodata", async (req, res) => {
   //check if id and time and duration is a number then unshift to front and remove dupplicates and remove stuff thats over 10 movies
-  console.log("postreq" + JSON.stringify(req.body.time))
   //await old movie list
   if (typeof req.user !== 'undefined') {
-    let user = await db.users.getuserfromid(1)
-    console.log(JSON.stringify(user));
+    let user = await db.users.getuserfromid(req.user.id)
+  
     if (user.moviedata != null) {
-      
       let usermoviearray = replaceAllBackSlash(user.moviedata)
       usermoviearray = JSON.parse(usermoviearray)
-      //todo check req.body is number
-      usermoviearray.movie.unshift(req.body)
-      //if top is same id just update time/remove
-      if (usermoviearray.movie[0].id == req.body.id) {
-        usermoviearray.movie[0].time = req.body.time
-        res.status(200)
-      }
-      let currentindex
-      usermoviearray.forEach(userelement => {
-
-        //if already on watch move to front and update to latest time
-        if (userelement.id == req.body.id) {
-          usermoviearray[currentindex].time=req.body.time
-          usermoviearray.unshift(usermoviearray.splice(currentindex,1)[0])
-          res.status(200)
+      console.log("json = "+JSON.stringify(usermoviearray+" "+user.moviedata));
+      db.users.updatemoviedata(user.id, db.users.jsonpostformater(req.body, usermoviearray))
+    }
+    else {
+      console.log("innull");
+      var idcheck = parseInt(req.body.id)
+      var timecheck = parseInt(req.body.time)
+      console.log("atinsert"+" "+idcheck);
+      if (idcheck) {
+        if (timecheck) {
+          console.log("atinsert");
+          db.users.insertmoviedata(user.id, { "movarr": [{ "id": req.body.id, "time": req.body.time }] })
         }
-        
-
-        currentindex++;
-      });
-       //unshift current req.body
-      usermoviearray.unshift(req.body)
-      user.moviedata=usermoviearray 
-      db.users.insertmoviedata(user.id,user.moviedata)
-      res.status(200)
-      //todo if at end of movie ignore and remove from array
-     
-      
-
+      }
 
 
     }
@@ -134,10 +112,10 @@ app.post("/api/uservideodata", async (req, res) => {
 app.post('/api/login',
   passport.authenticate('local', { failureRedirect: '/login' }),
   function (req, res) {
-    res.redirect('http://172.20.0.1:3000/');
+    res.redirect('/');
   });
 app.get("/api/checkAuthentication", (req, res) => {
-
+  console.log("checkauth");
   if (typeof req.user !== 'undefined') {
 
     res.status(200).json({
@@ -151,7 +129,7 @@ app.get("/api/checkAuthentication", (req, res) => {
 app.get('/api/logout',
   function (req, res) {
     req.logout();
-    res.redirect('http://172.20.0.1:3000/');
+    res.redirect('/');
   });
 app.get('/api/profile',
   require('connect-ensure-login').ensureLoggedIn(),
@@ -212,7 +190,7 @@ con.connect(function (err) {
   });
 });
 console.log("started")
-app.listen(6969);
+
 function replaceAllBackSlash(targetStr) {
   var index = targetStr.indexOf("\\");
   while (index >= 0) {
@@ -222,17 +200,5 @@ function replaceAllBackSlash(targetStr) {
   return targetStr;
 }
 
+app.listen(6969);
 
-
-let jarray = {
-  "movie": [
-    { "id": "1", "duration": "12", "time": "12" }
-    , { "id": "2", "duration": "12", "time": "12" }
-    , { "id": "3", "duration": "12", "time": "12" }
-    , { "id": "4", "duration": "12", "time": "12" }
-  ]
-}
-let a = jarray.movie
-
-a.unshift({ "id": "44", "duration": "44", "time": "44" })
-console.log(JSON.stringify(a));

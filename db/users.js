@@ -43,7 +43,7 @@ exports.GetFromWhere = function (whereat) {
         //resolve(".")
       }
       else {
-       
+        console.log(whereat + "path" + result[0].path);
         resolve(result[0].path)
       }
 
@@ -64,7 +64,7 @@ exports.Getallmovies = function () {
         //resolve(".")
       }
       else {
-        
+
         resolve(result)
       }
 
@@ -128,18 +128,34 @@ function GetUsernameWhere(whereat) {
     });
   });
 }
-
-
 exports.insertmoviedata = function (id, moviedata) {
 
-  connection.connect(function (err) {
-    if (err) throw err;
+
+  if (!connection._connectCalled) {
+    connection.connect();
+  }
+    
     var sql = "UPDATE users SET moviedata = " + mysql.escape(JSON.stringify(moviedata)) + " WHERE id = " + mysql.escape(id);
     connection.query(sql, function (err, result) {
       if (err) throw err;
       console.log(result.affectedRows + " record(s) updated");
     });
-  });
+  
+
+}
+
+exports.updatemoviedata = function (id, moviedata) {
+  if (!connection._connectCalled) {
+    connection.connect();
+  }
+   
+   
+    var sql = "UPDATE users SET moviedata = " + mysql.escape(JSON.stringify(moviedata)) + " WHERE id = " + mysql.escape(id);
+    connection.query(sql, function (err, result) {
+      if (err) throw err;
+      console.log(result.affectedRows + " record(s) updated");
+    });
+ 
 
 }
 
@@ -160,3 +176,37 @@ exports.getuserfromid = function (whereat) {
     });
   });
 }
+exports.jsonpostformater = function (reqbody, usermoviearray) {
+  var idcheck = parseInt(reqbody.id)
+  var timecheck = parseInt(reqbody.time)
+  if (!idcheck) {
+    console.log("notnum");
+    return (usermoviearray)
+  }
+  if (!timecheck) {
+    console.log("notnum");
+    return (usermoviearray)
+  }
+  if (typeof usermoviearray.movarr[0].id !== 'undefined') {
+    if (usermoviearray.movarr[0].id == reqbody.id) {
+      usermoviearray.movarr[0].time = reqbody.time
+      return (usermoviearray)
+    }
+  }
+
+
+  let currentindex
+  usermoviearray.movarr.forEach(userelement => {
+    //if already on watch move to front and update to latest time
+    if (userelement.id == reqbody.id) {
+      usermoviearray[currentindex].time = reqbody.time
+      usermoviearray.unshift(usermoviearray.splice(currentindex, 1)[0])
+      console.log("inforeach");
+      return (usermoviearray)
+    }
+    currentindex++;
+  });
+  usermoviearray.movarr.unshift(reqbody)
+  return (usermoviearray)
+}
+
