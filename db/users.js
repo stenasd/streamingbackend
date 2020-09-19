@@ -52,13 +52,57 @@ exports.GetFromWhere = function (whereat) {
 
   });
 }
+exports.GetFromWhereName = function (whereat) {
+
+  return new Promise(resolve => {
+    if (!connection._connectCalled) {
+      connection.connect();
+    }
+    console.log("whereat" + whereat);
+    connection.query("SELECT * FROM movies WHERE id = " + mysql.escape(whereat), function (err, result, fields) {
+      //if (err) throw err;
+      if (result[0] == undefined) {
+        //resolve(".")
+      }
+      else {
+        console.log(whereat + "path" + result[0]);
+        resolve(result[0])
+      }
+
+
+    });
+
+  });
+}
+exports.moviesearch = function (whereat) {
+
+  return new Promise(resolve => {
+    if (!connection._connectCalled) {
+      connection.connect();
+    }
+    console.log("whereat" + whereat);
+    connection.query("SELECT * FROM movies WHERE id = LIKE " + mysql.escape('%'+whereat+'%'), function (err, result, fields) {
+      //if (err) throw err;
+      if (result[0] == undefined) {
+        //resolve(".")
+      }
+      else {
+        console.log(whereat + "path" + result[0]);
+        resolve(result[0])
+      }
+
+
+    });
+
+  });
+}
 exports.Getallmovies = function () {
 
   return new Promise(resolve => {
     if (!connection._connectCalled) {
       connection.connect();
     }
-    connection.query("SELECT name,id FROM movies", function (err, result, fields) {
+    connection.query("SELECT * FROM movies INNER JOIN readytostream ON readytostream.id = movies.id; ", function (err, result, fields) {
       //if (err) throw err;
       if (result[0] == undefined) {
         //resolve(".")
@@ -135,7 +179,7 @@ exports.insertmoviedata = function (id, moviedata) {
     connection.connect();
   }
     
-    var sql = "UPDATE users SET moviedata = " + mysql.escape(JSON.stringify(moviedata)) + " WHERE id = " + mysql.escape(id);
+    var sql = "UPDATE users SET  data = " + mysql.escape(JSON.stringify(moviedata)) + " WHERE id = " + mysql.escape(id);
     connection.query(sql, function (err, result) {
       if (err) throw err;
       console.log(result.affectedRows + " record(s) updated");

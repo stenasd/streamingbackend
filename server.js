@@ -13,6 +13,7 @@ var fs = require('fs')
 var path = require('path')
 var bodyParser = require('body-parser');
 const { time } = require('console');
+const { promiseImpl } = require('ejs');
 
 passport.use(new Strategy(
   function (username, password, cb) {
@@ -67,16 +68,28 @@ app.get('/api/login',
   });
 app.get("/api/uservideodata", async (req, res) => {
   if (typeof req.user !== 'undefined') {
-    let user = await db.users.getuserfromid(1)
-    console.log(JSON.stringify(user));
-    if (user.moviedata != null) {
-
+    let user = await db.users.getuserfromid(req.user.id)
+    console.log("USER " + JSON.stringify(user));
+    if (user.moviedata) {
+      //for each GetFromWhere
       let usermovie = replaceAllBackSlash(user.moviedata)
-      console.log("checkifnull" + user)
-      usermovie = JSON.parse(usermovie)
-      console.log(usermovie.count)
 
-      res.status(200).json(usermovie);
+      usermovie = JSON.parse(usermovie)
+      let completearr = { "movarr": [] }
+      let unresolvedpromises = usermovie.movarr.map(async function (x) {
+
+        let mov = await db.users.GetFromWhereName(x.id)
+
+        let obj = { "name": mov.name, "time": x.time, "id": x.id }
+        console.log("maplog" + JSON.stringify(obj));
+        return obj
+      })
+      completearr.movarr = await Promise.all(unresolvedpromises)
+
+
+
+      console.log("arrayprint" + completearr.movarr[0]);
+      res.status(200).json(await completearr);
     }
   }
 });
@@ -85,18 +98,18 @@ app.post("/api/uservideodata", async (req, res) => {
   //await old movie list
   if (typeof req.user !== 'undefined') {
     let user = await db.users.getuserfromid(req.user.id)
-  
+
     if (user.moviedata != null) {
       let usermoviearray = replaceAllBackSlash(user.moviedata)
       usermoviearray = JSON.parse(usermoviearray)
-      console.log("json = "+JSON.stringify(usermoviearray+" "+user.moviedata));
+      console.log("json = " + JSON.stringify(usermoviearray + " " + user.moviedata));
       db.users.updatemoviedata(user.id, db.users.jsonpostformater(req.body, usermoviearray))
     }
     else {
       console.log("innull");
       var idcheck = parseInt(req.body.id)
       var timecheck = parseInt(req.body.time)
-      console.log("atinsert"+" "+idcheck);
+      console.log("atinsert" + " " + idcheck);
       if (idcheck) {
         if (timecheck) {
           console.log("atinsert");
@@ -184,9 +197,9 @@ var con = mysql.createConnection({
 
 con.connect(function (err) {
   if (err) throw err;
-  con.query("SELECT * FROM movies", function (err, result, fields) {
+  con.query("SELECT * FROM movies INNER JOIN readytostream ON readytostream.id = movies.id; ", function (err, result, fields) {
     if (err) throw err;
-
+    console.log("stuff"+JSON.stringify(result));
   });
 });
 console.log("started")
