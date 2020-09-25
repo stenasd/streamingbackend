@@ -5,7 +5,6 @@ var passport = require('passport');
 var Strategy = require('passport-local').Strategy;
 const mysql = require('mysql');
 var db = require('./db');
-var express = require('express')
 var fs = require('fs')
 var path = require('path')
 var app = express()

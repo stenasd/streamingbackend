@@ -1,14 +1,12 @@
 const mysql = require('mysql');
+var config = require('../serverconfig.json')
 var connection = mysql.createConnection({
   host: "localhost",
-  user: "foo",
-  password: "bar",
+  user: config.mysqllogin,
+  password: config.mysqlpass,
   database: "movie"
 });
-var records = [
-  { id: 1, username: 'jack', password: 'secret', displayName: 'Jack', emails: [{ value: 'jack@example.com' }] }
-  , { id: 2, username: 'jill', password: 'birthday', displayName: 'Jill', emails: [{ value: 'jill@example.com' }] }
-];
+
 // if id is in database respond with userobject
 exports.findById = function (id, cb) {
   process.nextTick(async function () {
